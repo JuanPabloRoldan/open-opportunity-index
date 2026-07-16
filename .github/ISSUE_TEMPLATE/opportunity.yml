@@ -1,0 +1,139 @@
+name: Submit or correct an opportunity
+description: Suggest a new scholarship, fellowship, summer school, internship or grant — or fix an existing one.
+title: "[opportunity] "
+labels: ["opportunity"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! One opportunity per issue. A maintainer will verify it against the official page before it goes live.
+        **The link must be the official provider page — not an aggregator (Mastersportal, Scholars4Dev, OpportunityDesk, etc.).**
+
+  - type: input
+    id: name
+    attributes:
+      label: Opportunity name
+      placeholder: e.g. DLR-DAAD Research Fellowships
+    validations:
+      required: true
+
+  - type: input
+    id: provider
+    attributes:
+      label: Provider / organisation
+      placeholder: e.g. German Aerospace Center (DLR) + DAAD
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Official page (URL)
+      placeholder: https://…
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options:
+        - scholarship
+        - fellowship
+        - summer-school
+        - internship
+        - travel-grant
+        - postdoc
+        - phd
+        - grant
+        - database
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: levels
+    attributes:
+      label: Degree level(s)
+      options:
+        - label: Undergraduate
+        - label: Master's
+        - label: PhD
+        - label: Postdoc
+        - label: Recent graduate
+
+  - type: checkboxes
+    id: fields
+    attributes:
+      label: Field(s)
+      options:
+        - label: Any field
+        - label: Engineering (general)
+        - label: Mechanical
+        - label: Aerospace
+        - label: Fluids / CFD
+        - label: Physics
+        - label: Computer science
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Eligibility scope
+      description: Be strict — "international" that really means a country list is "restricted", not "worldwide".
+      options:
+        - worldwide (open to any nationality)
+        - restricted (specific eligible countries)
+        - region (e.g. ESA states, Commonwealth, EU)
+        - host-enrolled (must already study in the host country)
+        - us-only / citizenship-restricted
+    validations:
+      required: true
+
+  - type: input
+    id: scopeNote
+    attributes:
+      label: Eligibility note
+      description: The catch, in one sentence.
+      placeholder: e.g. Open to international researchers; project-based at DLR institutes.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: funding
+    attributes:
+      label: Funding level
+      description: Don't overstate. Free tuition but no airfare/housing is "partial".
+      options:
+        - full (fully funded)
+        - partial
+        - stipend / paid
+        - varies
+    validations:
+      required: true
+
+  - type: input
+    id: fundNote
+    attributes:
+      label: What funding covers
+      placeholder: e.g. Monthly stipend + insurance; travel not included
+
+  - type: input
+    id: deadline
+    attributes:
+      label: Deadline (approximate window)
+      placeholder: e.g. Typically autumn — verify on official site
+
+  - type: textarea
+    id: desc
+    attributes:
+      label: One- or two-sentence description (your own words)
+      placeholder: What it is and who it's for. No copied marketing text.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Confirmations
+      options:
+        - label: The link above is the official provider page, not an aggregator.
+          required: true
+        - label: I verified the programme still runs and the eligibility/funding are stated honestly.
+          required: true
