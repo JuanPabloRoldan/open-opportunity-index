@@ -22,7 +22,7 @@ level, field, eligibility scope and funding, and click straight through to the s
 
 1. Create a public repo and add `index.html` (plus this folder's other files).
 2. **Settings → Pages → Source: “Deploy from a branch” → `main` / `/ (root)` → Save.**
-3. Your site goes live at `https://<you>.github.io/<repo>/`.
+3. Your site goes live at `https://juanpabloroldan.github.io/open-opportunity-index/`.
 4. In `index.html`, edit the `SITE` block near the top of the `<script>` so
    `repoUrl` and `submitUrl` point back at your repo, then commit.
 
