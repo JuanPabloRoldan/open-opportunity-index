@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Opportunity Index — funded scholarships, fellowships & research programs for international STEM students</title>
+<meta name="description" content="A community-maintained index of scholarships, fellowships, summer schools, research internships and travel grants, organised around who is actually eligible. International-student first, with an engineering, mechanical and aerospace emphasis.">
+
+<!-- Fonts: Space Grotesk (display) + IBM Plex Mono (catalog/data). System fallbacks below if offline. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================================
+   OPEN OPPORTUNITY INDEX — single-file, no build step, paste-and-host.
+   Design tokens. Palette is a navigation-chart / atlas identity; the green /
+   amber / red / slate colours are FUNCTIONAL — they encode eligibility, which
+   is the whole point of the project.
+   ============================================================================ */
+:root{
+  --ink:#142033;          /* deep atlas navy — text & dark bands */
+  --ink-soft:#33455c;
+  --paper:#e9edf0;        /* cool paper background (deliberately not warm cream) */
+  --surface:#ffffff;      /* cards */
+  --line:#d3dae1;         /* hairlines */
+  --slate:#5a6b7b;        /* secondary text */
+  --chart:#2e5e8c;        /* interactive / links */
+  --chart-ink:#1f4568;
+  /* eligibility signal system */
+  --sig-open:#12896b;     /* open worldwide */
+  --sig-region:#c9852b;   /* restricted / region / partner countries */
+  --sig-host:#5a6b7b;     /* must be enrolled in host country */
+  --sig-closed:#b23b3b;   /* citizenship-restricted (e.g. US only) */
+  --sig-demo:#6d51b3;     /* demographic restriction (e.g. women only) */
+
+  --r:14px;
+  --shadow:0 1px 0 rgba(20,32,51,.04), 0 10px 28px -18px rgba(20,32,51,.28);
+  --display:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --body:ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--chart)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* ---------- Header band ---------- */
+.masthead{background:var(--ink);color:#eaf0f6;border-bottom:3px solid var(--sig-open)}
+.masthead .wrap{padding:34px 20px 30px}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand .mark{
+  font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+  color:#8fb7d8;border:1px solid #33455c;padding:5px 9px;border-radius:6px;white-space:nowrap
+}
+h1{
+  font-family:var(--display);font-weight:700;letter-spacing:-.015em;
+  font-size:clamp(26px,4.4vw,44px);line-height:1.02;margin:0;color:#fff
+}
+.lede{margin:16px 0 0;max-width:60ch;color:#c4d3e2;font-size:clamp(15px,1.6vw,17px)}
+.lede b{color:#fff;font-weight:600}
+.mast-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.mast-links a{
+  font-family:var(--mono);font-size:12.5px;text-decoration:none;color:#dfe9f2;
+  border:1px solid #33455c;border-radius:8px;padding:8px 12px;transition:.15s
+}
+.mast-links a:hover{background:#1c2b42;border-color:#476189}
+.mast-links a.primary{background:var(--sig-open);border-color:var(--sig-open);color:#04231a;font-weight:600}
+.mast-links a.primary:hover{background:#0f7a5f}
+
+/* ---------- Legend ---------- */
+.legend{
+  display:flex;gap:18px;flex-wrap:wrap;margin-top:24px;padding-top:18px;
+  border-top:1px solid #2a3a52
+}
+.legend .li{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;color:#b9cadb}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+.dot.open{background:var(--sig-open)} .dot.region{background:var(--sig-region)}
+.dot.host{background:var(--sig-host)} .dot.closed{background:var(--sig-closed)}
+.dot.demo{background:var(--sig-demo)}
+
+/* ---------- Toolbar ---------- */
+.toolbar{position:sticky;top:0;z-index:20;background:rgba(233,237,240,.94);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.toolbar .wrap{padding:16px 20px}
+.searchrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.search{flex:1;min-width:240px;position:relative}
+.search input{
+  width:100%;font-family:var(--body);font-size:16px;padding:13px 14px 13px 42px;
+  border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)
+}
+.search input:focus{outline:2px solid var(--chart);outline-offset:1px;border-color:var(--chart)}
+.search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--slate)}
+.count{font-family:var(--mono);font-size:13px;color:var(--slate);white-space:nowrap}
+.count b{color:var(--ink)}
+.reset{font-family:var(--mono);font-size:12.5px;background:none;border:1px solid var(--line);
+  border-radius:8px;padding:9px 12px;cursor:pointer;color:var(--slate)}
+.reset:hover{border-color:var(--chart);color:var(--chart)}
+
+.filters{margin-top:14px;display:grid;gap:10px}
+.fgroup{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.fgroup .glabel{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--slate);min-width:76px;padding-top:7px;flex:none
+}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  font-family:var(--mono);font-size:12px;border:1px solid var(--line);background:#fff;
+  color:var(--ink-soft);padding:6px 11px;border-radius:20px;cursor:pointer;transition:.13s;
+  user-select:none
+}
+.chip:hover{border-color:var(--chart)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip:focus-visible{outline:2px solid var(--chart);outline-offset:2px}
+
+/* ---------- Results grid ---------- */
+main .wrap{padding:26px 20px 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  padding:18px 18px 16px;display:flex;flex-direction:column;gap:11px;
+  box-shadow:var(--shadow);transition:transform .16s ease, box-shadow .16s ease;
+  border-top:3px solid var(--sig-open)
+}
+.card.r-region{border-top-color:var(--sig-region)}
+.card.r-host{border-top-color:var(--sig-host)}
+.card.r-closed{border-top-color:var(--sig-closed)}
+.card:hover{transform:translateY(-3px);box-shadow:0 1px 0 rgba(20,32,51,.04),0 20px 40px -22px rgba(20,32,51,.4)}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--slate)}
+.card h3{font-family:var(--display);font-weight:600;font-size:19px;line-height:1.15;margin:0;letter-spacing:-.01em}
+.provider{font-size:13px;color:var(--slate);margin-top:-4px}
+.desc{font-size:14px;color:var(--ink-soft);margin:0}
+
+.tags{display:flex;gap:5px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+  background:#eef2f5;color:var(--ink-soft);padding:3px 7px;border-radius:5px}
+.tag.field{background:#e4eef7;color:var(--chart-ink)}
+
+/* eligibility signal block */
+.sig{display:flex;align-items:flex-start;gap:9px;padding:10px 11px;border-radius:9px;
+  background:#f5f8fa;border:1px solid var(--line)}
+.sig .dot{margin-top:4px}
+.sig .stxt{font-size:12.5px;color:var(--ink-soft)}
+.sig .scode{font-family:var(--mono);font-weight:600;font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;display:block;margin-bottom:1px}
+.scode.open{color:var(--sig-open)} .scode.region{color:var(--sig-region)}
+.scode.host{color:var(--sig-host)} .scode.closed{color:var(--sig-closed)}
+.demoflag{display:inline-block;font-family:var(--mono);font-size:10px;text-transform:uppercase;
+  letter-spacing:.06em;color:#fff;background:var(--sig-demo);padding:2px 6px;border-radius:4px;margin-top:6px}
+
+.footer-row{margin-top:auto;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.fund{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  padding:4px 8px;border-radius:6px}
+.fund.full{background:#e2f3ec;color:#0d6e55}
+.fund.partial{background:#fbeede;color:#b46b1f}
+.fund.stipend{background:#e6eefb;color:#2b528a}
+.fund.varies{background:#eef1f4;color:#5a6b7b}
+.fundnote{font-size:11.5px;color:var(--slate)}
+.deadline{font-family:var(--mono);font-size:11px;color:var(--slate)}
+.deadline b{color:var(--ink)}
+.golink{font-family:var(--mono);font-size:12.5px;font-weight:600;text-decoration:none;color:var(--chart);white-space:nowrap}
+.golink:hover{text-decoration:underline}
+
+/* empty state */
+.empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--slate)}
+.empty h3{font-family:var(--display);color:var(--ink);font-size:22px;margin:0 0 8px}
+.empty button{margin-top:14px;font-family:var(--mono);font-size:13px;border:1px solid var(--chart);
+  color:var(--chart);background:none;border-radius:8px;padding:9px 14px;cursor:pointer}
+
+/* ---------- Page footer ---------- */
+footer.site{margin-top:40px;background:var(--ink);color:#c4d3e2}
+footer.site .wrap{padding:34px 20px;display:grid;gap:20px;grid-template-columns:1.4fr 1fr}
+footer.site h4{font-family:var(--display);color:#fff;margin:0 0 8px;font-size:15px}
+footer.site p{margin:0 0 8px;font-size:13.5px;max-width:60ch}
+footer.site a{color:#8fb7d8}
+footer.site .meta{font-family:var(--mono);font-size:11.5px;color:#7f96ac;margin-top:6px}
+.disclaimer{background:#1c2b42;border:1px solid #2a3a52;border-radius:10px;padding:12px 14px;
+  font-size:12.5px;color:#c4d3e2}
+
+@media(max-width:720px){
+  footer.site .wrap{grid-template-columns:1fr}
+  .fgroup .glabel{min-width:100%;padding-top:0}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<!-- =========================================================================
+     HEADER
+     ========================================================================= -->
+<header class="masthead">
+  <div class="wrap">
+    <div class="brand">
+      <span class="mark" id="brandMark">Open Opportunity Index</span>
+    </div>
+    <h1 id="siteTitle">Funding you can actually apply for.</h1>
+    <p class="lede">
+      A community-maintained index of scholarships, fellowships, summer schools, research
+      internships and travel grants — organised around the question the big lists answer badly:
+      <b>am I eligible, and is it actually funded?</b> International-student first, with an
+      engineering, mechanical and aerospace focus.
+    </p>
+
+    <nav class="mast-links" aria-label="Project links">
+      <!-- EDIT THESE THREE LINKS to point at your repo -->
+      <a class="primary" id="submitLink" href="#">＋ Submit an opportunity</a>
+      <a id="repoLink" href="#">◇ Source on GitHub</a>
+      <a id="dataLink" href="#" download>⬇ Download data (JSON)</a>
+    </nav>
+
+    <div class="legend" aria-label="Eligibility signal legend">
+      <span class="li"><span class="dot open"></span>Open worldwide</span>
+      <span class="li"><span class="dot region"></span>Restricted / region-locked</span>
+      <span class="li"><span class="dot host"></span>Must be enrolled in host country</span>
+      <span class="li"><span class="dot closed"></span>Citizenship-restricted</span>
+      <span class="li"><span class="dot demo"></span>Demographic-specific</span>
+    </div>
+  </div>
+</header>
+
+<!-- =========================================================================
+     TOOLBAR / FILTERS
+     ========================================================================= -->
+<div class="toolbar">
+  <div class="wrap">
+    <div class="searchrow">
+      <label class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="q" type="search" placeholder="Search by name, provider, field or country…" autocomplete="off" aria-label="Search opportunities">
+      </label>
+      <span class="count"><b id="countN">0</b> shown</span>
+      <button class="reset" id="resetBtn" type="button">Clear all filters</button>
+    </div>
+    <div class="filters" id="filters"><!-- chip groups injected by JS --></div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     RESULTS
+     ========================================================================= -->
+<main>
+  <div class="wrap">
+    <div class="grid" id="grid"></div>
+  </div>
+</main>
+
+<!-- =========================================================================
+     FOOTER
+     ========================================================================= -->
+<footer class="site">
+  <div class="wrap">
+    <div>
+      <h4>About this index</h4>
+      <p>
+        This is a verification-and-filtering layer, not another link dump. Every entry is meant to
+        link to the <b>official</b> provider page, and eligibility is surfaced up front. It does not
+        replace Fulbright, EURAXESS or DAAD — it connects them and many smaller sources through one
+        consistent eligibility schema.
+      </p>
+      <p class="disclaimer">
+        ⚠ Deadlines and rules change every cycle. Treat dates here as a hint and always confirm on the
+        official page before applying. Found something out of date? Open an issue — see “Submit an opportunity”.
+      </p>
+    </div>
+    <div>
+      <h4>Reuse &amp; credit</h4>
+      <p>Dataset &amp; descriptions: <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+         Site code: MIT. Program names and official text belong to their respective providers.</p>
+      <p class="meta">Last updated: <span id="updated">—</span></p>
+      <p class="meta"><span id="totalN">0</span> opportunities indexed</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================================
+   ⬇⬇⬇  CONFIG — change these once, in one place  ⬇⬇⬇
+   ============================================================================ */
+const SITE = {
+  name: "Open Opportunity Index",           // shown in the top-left tag
+  title: "Funding you can actually apply for.",
+  repoUrl:   "https://github.com/your-org/open-opportunity-index",           // ← your repo
+  submitUrl: "https://github.com/your-org/open-opportunity-index/issues/new/choose", // ← issue form
+  updated:   "2026-07-16"                    // ← bump when you edit the data
+};
+
+/* ============================================================================
+   ⬇⬇⬇  DATA — add opportunities here. Copy one { … } block, edit, done.  ⬇⬇⬇
+
+   FIELD REFERENCE
+   type    : scholarship | fellowship | summer-school | internship |
+             travel-grant | exchange | postdoc | grant | database
+   levels  : undergrad | masters | phd | postdoc | recent-grad        (array)
+   fields  : any | engineering | mechanical | aerospace | fluids |
+             physics | cs                                             (array)
+   scope   : worldwide | restricted | region | host-enrolled | us-only
+   funding : full | partial | stipend | varies
+   demo    : optional string, e.g. "Women only" (adds a purple flag)
+   verified: date "YYYY-MM-DD" you last confirmed this against the official page.
+             The monthly staleness check flags entries older than 6 months.
+   Every card auto-shows a “verify on official page” reminder, so you never
+   have to trust the deadline field — keep it approximate.
+   ============================================================================ */
+const DATA = [
+
+/* ---- FLAGSHIP GENERAL SCHOLARSHIPS & FELLOWSHIPS ---- */
+{ name:"Fulbright Foreign Student Program", provider:"U.S. Dept. of State / IIE", type:"fellowship",
+  dest:"United States", levels:["masters","phd"], fields:["any"], scope:"worldwide",
+  scopeNote:"Apply through your home-country Fulbright commission; eligibility set nationally.",
+  funding:"full", fundNote:"Tuition, stipend, airfare, health cover", deadline:"Varies by country — often spring/summer", verified:"2026-07-16",
+  url:"https://foreign.fulbrightonline.org/",
+  desc:"Graduate study, research and teaching in the U.S. for citizens of ~160 partner countries." },
+
+{ name:"Erasmus Mundus Joint Masters", provider:"European Commission (EACEA)", type:"scholarship",
+  dest:"Europe (multi-country)", levels:["masters"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Open worldwide; you study across 2+ European universities.",
+  funding:"full", fundNote:"Tuition, travel, monthly living allowance", deadline:"Each programme sets its own — typically winter", verified:"2026-07-16",
+  url:"https://erasmus-plus.ec.europa.eu/opportunities/individuals/students/erasmus-mundus-joint-masters",
+  desc:"Fully-funded integrated master's delivered by consortia of European universities." },
+
+{ name:"Chevening Scholarships", provider:"UK Government (FCDO)", type:"scholarship",
+  dest:"United Kingdom", levels:["masters"], fields:["any"], scope:"restricted",
+  scopeNote:"Citizens of eligible Chevening countries only; requires ~2 yrs work experience.",
+  funding:"full", fundNote:"Tuition, living, travel", deadline:"Typically opens Aug, closes early Nov", verified:"2026-07-16",
+  url:"https://www.chevening.org/",
+  desc:"One-year fully-funded UK master's for emerging leaders from eligible countries." },
+
+{ name:"DAAD Study Scholarships & Research Grants", provider:"DAAD (Germany)", type:"scholarship",
+  dest:"Germany", levels:["masters","phd"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Open to international students; some calls target specific regions.",
+  funding:"full", fundNote:"Monthly stipend, insurance, travel", deadline:"Varies by programme", verified:"2026-07-16",
+  url:"https://www2.daad.de/deutschland/stipendium/datenbank/en/",
+  desc:"Germany's central funding body — master's, PhD and research grants, plus a large external-scholarship database." },
+
+{ name:"Marie Skłodowska-Curie Actions", provider:"European Commission (Horizon Europe)", type:"postdoc",
+  dest:"Europe (and beyond)", levels:["phd","postdoc"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Salaried research posts; mobility rule applies (can't have lived in host country too recently).",
+  funding:"full", fundNote:"Employment contract with salary + allowances", deadline:"Annual calls", verified:"2026-07-16",
+  url:"https://marie-sklodowska-curie-actions.ec.europa.eu/",
+  desc:"Doctoral Networks and Postdoctoral Fellowships — paid research mobility across Europe." },
+
+{ name:"MEXT Scholarship", provider:"Japanese Government (MEXT)", type:"scholarship",
+  dest:"Japan", levels:["undergrad","masters","phd"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Two routes: embassy-recommended (via your country) or university-recommended.",
+  funding:"full", fundNote:"Tuition, monthly stipend, airfare", deadline:"Embassy route typically spring", verified:"2026-07-16",
+  url:"https://www.studyinjapan.go.jp/en/",
+  desc:"Japan's government scholarship covering undergraduate through doctoral study and research." },
+
+{ name:"Swiss Government Excellence Scholarships", provider:"Swiss Confederation", type:"fellowship",
+  dest:"Switzerland", levels:["phd","postdoc"], fields:["any"], scope:"restricted",
+  scopeNote:"Eligible-country list varies yearly; apply via your country's Swiss embassy.",
+  funding:"full", fundNote:"Monthly stipend, tuition waiver, insurance", deadline:"Autumn–winter, country-dependent", verified:"2026-07-16",
+  url:"https://www.sbfi.admin.ch/en/swiss-government-excellence-scholarships",
+  desc:"Research or doctoral scholarships at Swiss public universities and ETH/EPFL." },
+
+{ name:"Eiffel Excellence Scholarship", provider:"Campus France", type:"scholarship",
+  dest:"France", levels:["masters","phd"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Nominated by the host French institution, not by the student directly.",
+  funding:"partial", fundNote:"Monthly allowance + some travel/insurance; tuition not always covered", deadline:"Institution submits ~January", verified:"2026-07-16",
+  url:"https://www.campusfrance.org/en/eiffel-scholarship-program-of-excellence",
+  desc:"France's flagship scholarship for top international students; strong in engineering & sciences." },
+
+{ name:"Government of Ireland International Scholarships", provider:"Higher Education Authority", type:"scholarship",
+  dest:"Ireland", levels:["masters","phd"], fields:["any"], scope:"worldwide",
+  scopeNote:"Open to non-EU/EEA students across all disciplines.",
+  funding:"partial", fundNote:"€10,000 stipend + fee waiver for one year", deadline:"Typically spring", verified:"2026-07-16",
+  url:"https://hea.ie/functions/international/government-of-ireland-international-education-scholarships/",
+  desc:"One-year awards for international students at Irish higher-education institutions." },
+
+{ name:"Gates Cambridge Scholarship", provider:"University of Cambridge", type:"scholarship",
+  dest:"United Kingdom", levels:["masters","phd"], fields:["any"], scope:"restricted",
+  scopeNote:"Any nationality except UK; you must also win a Cambridge place.",
+  funding:"full", fundNote:"Full cost of study + maintenance", deadline:"Aligns with course deadlines (Oct–Dec)", verified:"2026-07-16",
+  url:"https://www.gatescambridge.org/",
+  desc:"Highly selective full funding for graduate study at Cambridge." },
+
+{ name:"Clarendon Fund Scholarships", provider:"University of Oxford", type:"scholarship",
+  dest:"United Kingdom", levels:["masters","phd"], fields:["any"], scope:"worldwide",
+  scopeNote:"Automatic consideration for most on-time Oxford grad applications.",
+  funding:"full", fundNote:"Fees + generous grant for living costs", deadline:"Course-dependent (Dec–Jan)", verified:"2026-07-16",
+  url:"https://www.ox.ac.uk/clarendon",
+  desc:"~1,000 fully-funded scholarships across Oxford graduate programmes." },
+
+{ name:"Rhodes Scholarship", provider:"Rhodes Trust", type:"scholarship",
+  dest:"United Kingdom (Oxford)", levels:["masters","phd"], fields:["any"], scope:"restricted",
+  scopeNote:"Only for specific constituencies/countries — check if yours is eligible.",
+  funding:"full", fundNote:"Fees + stipend + travel", deadline:"Varies by constituency", verified:"2026-07-16",
+  url:"https://www.rhodeshouse.ox.ac.uk/",
+  desc:"Century-old fully-funded postgraduate scholarship at Oxford." },
+
+{ name:"Commonwealth Scholarships", provider:"Commonwealth Scholarship Commission (UK)", type:"scholarship",
+  dest:"United Kingdom", levels:["masters","phd"], fields:["any","engineering"], scope:"restricted",
+  scopeNote:"Citizens of eligible Commonwealth countries; several tracks incl. low/middle-income focus.",
+  funding:"full", fundNote:"Tuition, stipend, airfare", deadline:"Autumn, via national nominating agencies", verified:"2026-07-16",
+  url:"https://cscuk.fcdo.gov.uk/",
+  desc:"UK master's and PhD funding for Commonwealth-country nationals." },
+
+{ name:"Stipendium Hungaricum", provider:"Tempus Public Foundation (Hungary)", type:"scholarship",
+  dest:"Hungary", levels:["undergrad","masters","phd"], fields:["any","engineering"], scope:"restricted",
+  scopeNote:"Only for citizens of Hungary's partner countries.",
+  funding:"full", fundNote:"Tuition waiver, stipend, accommodation contribution, insurance", deadline:"Typically Jan", verified:"2026-07-16",
+  url:"https://stipendiumhungaricum.hu/",
+  desc:"Large government programme covering all study levels for partner-country students." },
+
+{ name:"Chinese Government Scholarship (CSC)", provider:"China Scholarship Council", type:"scholarship",
+  dest:"China", levels:["undergrad","masters","phd"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Multiple routes: embassy, university, or bilateral programme.",
+  funding:"full", fundNote:"Tuition, accommodation, stipend, insurance", deadline:"Roughly Jan–Apr", verified:"2026-07-16",
+  url:"https://www.campuschina.org/",
+  desc:"China's central scholarship for international students at all levels." },
+
+{ name:"Australia Awards & Research Training Program", provider:"Australian Government", type:"scholarship",
+  dest:"Australia", levels:["masters","phd"], fields:["any","engineering"], scope:"restricted",
+  scopeNote:"Australia Awards target specific developing countries; RTP is offered via each university.",
+  funding:"full", fundNote:"Tuition offset + living stipend (RTP)", deadline:"University-dependent", verified:"2026-07-16",
+  url:"https://www.dfat.gov.au/people-to-people/australia-awards",
+  desc:"Government-funded study and research places in Australia." },
+
+{ name:"Knight-Hennessy Scholars", provider:"Stanford University", type:"fellowship",
+  dest:"United States", levels:["masters","phd"], fields:["any"], scope:"worldwide",
+  scopeNote:"Any nationality; must be admitted to a Stanford graduate programme.",
+  funding:"full", fundNote:"Tuition, stipend, travel for up to 3 years", deadline:"Typically October", verified:"2026-07-16",
+  url:"https://knight-hennessy.stanford.edu/",
+  desc:"Fully-funded, multidisciplinary graduate fellowship at Stanford." },
+
+{ name:"Schwarzman Scholars", provider:"Tsinghua University", type:"scholarship",
+  dest:"China", levels:["masters"], fields:["any"], scope:"worldwide",
+  scopeNote:"Open worldwide; one-year master's in Global Affairs, taught in English.",
+  funding:"full", fundNote:"Tuition, travel, stipend", deadline:"Separate deadlines for China vs. rest of world", verified:"2026-07-16",
+  url:"https://www.schwarzmanscholars.org/",
+  desc:"Leadership-focused fully-funded master's at Tsinghua in Beijing." },
+
+{ name:"Vanier Canada Graduate Scholarships", provider:"Government of Canada", type:"scholarship",
+  dest:"Canada", levels:["phd"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"International and domestic; you must be nominated by a Canadian university.",
+  funding:"full", fundNote:"CA$50,000/yr for 3 years", deadline:"University sets internal deadline (autumn)", verified:"2026-07-16",
+  url:"https://vanier.gc.ca/",
+  desc:"Prestigious doctoral funding to attract top PhD students to Canada." },
+
+{ name:"Rotary Peace Fellowship", provider:"Rotary Foundation", type:"fellowship",
+  dest:"Multiple (peace centres)", levels:["masters","recent-grad"], fields:["any"], scope:"worldwide",
+  scopeNote:"Master's or professional-certificate tracks; applied via a local Rotary district.",
+  funding:"full", fundNote:"Tuition, room/board, travel, field study", deadline:"Typically May", verified:"2026-07-16",
+  url:"https://www.rotary.org/en/our-programs/peace-fellowships",
+  desc:"Funded study in peace and development at partner universities worldwide." },
+
+{ name:"Alexander von Humboldt Research Fellowship", provider:"Humboldt Foundation (Germany)", type:"postdoc",
+  dest:"Germany", levels:["postdoc"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"For postdocs and experienced researchers of any nationality; needs a German host.",
+  funding:"full", fundNote:"Monthly research fellowship + family/travel allowances", deadline:"Rolling", verified:"2026-07-16",
+  url:"https://www.humboldt-foundation.de/en/",
+  desc:"Long-running fellowships letting researchers do a self-defined project in Germany." },
+
+{ name:"Holland Scholarship", provider:"Nuffic + Dutch universities", type:"scholarship",
+  dest:"Netherlands", levels:["undergrad","masters"], fields:["any","engineering"], scope:"restricted",
+  scopeNote:"For non-EEA students; applied for at the participating Dutch institution.",
+  funding:"partial", fundNote:"€5,000 first-year grant (not full cost)", deadline:"Typically Feb–May", verified:"2026-07-16",
+  url:"https://www.studyinnl.org/finances/holland-scholarship",
+  desc:"First-year top-up scholarship for international students in the Netherlands." },
+
+{ name:"Aga Khan Foundation International Scholarship", provider:"Aga Khan Foundation", type:"scholarship",
+  dest:"Multiple", levels:["masters","phd"], fields:["any"], scope:"restricted",
+  scopeNote:"For students from specific developing countries where AKF operates.",
+  funding:"partial", fundNote:"50% grant / 50% loan (needs-based)", deadline:"Roughly Mar–Jul (country offices)", verified:"2026-07-16",
+  url:"https://the.akdn/en/how-we-work/developing-human-capacity/education/international-scholarship-programme",
+  desc:"Needs-based postgraduate funding for students from selected developing countries." },
+
+/* ---- ENGINEERING · AEROSPACE · MECHANICAL · FLUIDS ---- */
+{ name:"ESA Graduate Trainee (EGT)", provider:"European Space Agency", type:"internship",
+  dest:"Europe (ESA sites)", levels:["recent-grad"], fields:["aerospace","engineering","mechanical"], scope:"region",
+  scopeNote:"Nationals of ESA Member / Associate / Cooperating states only.",
+  funding:"stipend", fundNote:"Paid one-year traineeship + relocation", deadline:"Annual campaign (autumn)", verified:"2026-07-16",
+  url:"https://www.esa.int/About_Us/Careers_at_ESA/Graduates_ESA_Graduate_Trainees",
+  desc:"A year working on real space projects at ESA for recent graduates from member states (formerly the Young Graduate Trainee / YGT programme; ~100 posts published each February)." },
+
+{ name:"ESA Academy Training & Programmes", provider:"ESA Education Office", type:"summer-school",
+  dest:"Europe (ESEC, Belgium)", levels:["undergrad","masters","phd"], fields:["aerospace","engineering","physics"], scope:"region",
+  scopeNote:"University students who are nationals of ESA Member/Associate states.",
+  funding:"full", fundNote:"Travel + accommodation typically sponsored", deadline:"Per activity", verified:"2026-07-16",
+  url:"https://www.esa.int/Education",
+  desc:"Short training courses, workshops and hands-on projects for space-interested students." },
+
+{ name:"von Karman Institute — Research Master in Fluid Dynamics", provider:"VKI (Belgium)", type:"scholarship",
+  dest:"Belgium", levels:["masters","recent-grad"], fields:["fluids","aerospace","mechanical"], scope:"worldwide",
+  scopeNote:"Open internationally; competitive scholarships/bursaries available.",
+  funding:"varies", fundNote:"Merit scholarships & assistantships for some", deadline:"Typically spring", verified:"2026-07-16",
+  url:"https://www.vki.ac.be/index.php/research-master-in-fluid-dynamics",
+  desc:"A specialist postgraduate year in experimental & computational fluid dynamics and aerodynamics." },
+
+{ name:"DLR-DAAD Research Fellowships", provider:"DLR + DAAD (Germany)", type:"fellowship",
+  dest:"Germany", levels:["phd","postdoc","recent-grad"], fields:["aerospace","engineering","physics"], scope:"worldwide",
+  scopeNote:"Open to international researchers; project-based at DLR institutes.",
+  funding:"full", fundNote:"Monthly stipend + insurance", deadline:"Multiple calls per year", verified:"2026-07-16",
+  url:"https://www.dlr.de/en/careers/dlr-daad",
+  desc:"Fellowships to do aerospace, energy and transport research at the German Aerospace Center." },
+
+{ name:"CERN Summer Student Programme", provider:"CERN", type:"internship",
+  dest:"Switzerland", levels:["undergrad","masters"], fields:["physics","engineering","cs"], scope:"restricted",
+  scopeNote:"Member-state track and a separate (smaller) non-member-state track.",
+  funding:"stipend", fundNote:"Subsistence allowance + travel", deadline:"Typically Jan", verified:"2026-07-16",
+  url:"https://careers.cern/summer",
+  desc:"Weeks of lectures plus hands-on work in a major physics-and-engineering lab." },
+
+{ name:"CERN Doctoral Student Programme", provider:"CERN", type:"phd",
+  dest:"Switzerland", levels:["phd"], fields:["physics","engineering","cs"], scope:"restricted",
+  scopeNote:"Primarily member/associate states; you keep enrolment at your home university.",
+  funding:"stipend", fundNote:"Paid contract while completing your thesis at CERN", deadline:"Several rounds per year", verified:"2026-07-16",
+  url:"https://careers.cern/students",
+  desc:"Do part of your PhD (applied physics, engineering, computing) on-site at CERN." },
+
+{ name:"DESY Summer Student Programme", provider:"DESY (Germany)", type:"internship",
+  dest:"Germany", levels:["undergrad","masters"], fields:["physics","engineering"], scope:"worldwide",
+  scopeNote:"Open to students worldwide in the final years of a bachelor's or in a master's.",
+  funding:"stipend", fundNote:"Allowance, accommodation, travel support", deadline:"Typically Jan", verified:"2026-07-16",
+  url:"https://summerstudents.desy.de/",
+  desc:"Summer research in particle physics, accelerators and photon science." },
+
+{ name:"LEAPS — Leiden/ESA Astrophysics Summer Programme", provider:"Leiden University", type:"internship",
+  dest:"Netherlands", levels:["undergrad","masters"], fields:["physics","aerospace"], scope:"worldwide",
+  scopeNote:"International undergraduates and master's students in astronomy/physics.",
+  funding:"stipend", fundNote:"Stipend + travel + accommodation for a ~10-week project", deadline:"Typically winter", verified:"2026-07-16",
+  url:"https://leaps.strw.leidenuniv.nl/",
+  desc:"A funded summer research project at one of Europe's top astronomy institutes." },
+
+{ name:"Caltech SURF", provider:"California Institute of Technology", type:"internship",
+  dest:"United States", levels:["undergrad"], fields:["engineering","physics","cs","aerospace"], scope:"restricted",
+  scopeNote:"International undergrads eligible for parts of the programme; check the specific track.",
+  funding:"stipend", fundNote:"Summer research stipend", deadline:"Typically Feb", verified:"2026-07-16",
+  url:"https://sfp.caltech.edu/programs/surf",
+  desc:"Ten weeks of mentored research at Caltech/JPL, ending in a written technical report." },
+
+{ name:"Amelia Earhart Fellowship", provider:"Zonta International", type:"fellowship",
+  dest:"Study anywhere", levels:["phd"], fields:["aerospace","engineering"], scope:"worldwide",
+  scopeNote:"Women pursuing a PhD in aerospace-related science or engineering, any nationality.",
+  funding:"partial", fundNote:"US$10,000 toward study/research", deadline:"Typically Nov", verified:"2026-07-16",
+  url:"https://www.zonta.org/Web/Web/Programs/Education/Amelia_Earhart_Fellowship.aspx",
+  desc:"A long-standing award supporting women in aerospace-engineering doctoral study.", demo:"Women only" },
+
+{ name:"ICTP Programmes", provider:"Abdus Salam International Centre for Theoretical Physics", type:"fellowship",
+  dest:"Italy", levels:["masters","phd","postdoc"], fields:["physics","engineering"], scope:"restricted",
+  scopeNote:"Strong emphasis on researchers from developing countries.",
+  funding:"full", fundNote:"Stipend + travel for many programmes", deadline:"Per programme", verified:"2026-07-16",
+  url:"https://www.ictp.it/",
+  desc:"Diploma programme, PhD sandwich schemes, schools and associateships in the physical/mathematical sciences." },
+
+{ name:"IMPRS / Max Planck PhD Programs", provider:"Max Planck Society", type:"phd",
+  dest:"Germany", levels:["phd"], fields:["physics","engineering","cs"], scope:"worldwide",
+  scopeNote:"International PhD schools; admission is competitive and project-based.",
+  funding:"stipend", fundNote:"Funded contract/stipend for the doctoral period", deadline:"Varies by school", verified:"2026-07-16",
+  url:"https://www.mpg.de/en/imprs",
+  desc:"Structured, English-language doctoral programmes across Max Planck research institutes." },
+
+{ name:"CISM Courses", provider:"International Centre for Mechanical Sciences (Udine)", type:"summer-school",
+  dest:"Italy", levels:["masters","phd","postdoc"], fields:["mechanical","fluids","engineering"], scope:"worldwide",
+  scopeNote:"Open internationally; a limited number of grants can waive fees.",
+  funding:"varies", fundNote:"Registration fee; some fee-waiver grants", deadline:"Per course", verified:"2026-07-16",
+  url:"https://www.cism.it/",
+  desc:"Advanced short courses in solid & fluid mechanics taught by leading researchers." },
+
+{ name:"ERCOFTAC Schools & Da Vinci Competition", provider:"ERCOFTAC", type:"summer-school",
+  dest:"Europe", levels:["phd","postdoc"], fields:["fluids","mechanical","engineering"], scope:"worldwide",
+  scopeNote:"Aimed at PhD students and researchers in flow, turbulence and combustion.",
+  funding:"varies", fundNote:"Fees vary; membership discounts", deadline:"Per event", verified:"2026-07-16",
+  url:"https://www.ercoftac.org/",
+  desc:"Specialist CFD and turbulence courses, plus an annual best-PhD competition." },
+
+{ name:"Princeton-CEFRC Combustion Summer School", provider:"Princeton University", type:"summer-school",
+  dest:"United States", levels:["phd","postdoc"], fields:["fluids","mechanical","engineering"], scope:"worldwide",
+  scopeNote:"Open internationally to graduate students and researchers in combustion/energy.",
+  funding:"varies", fundNote:"Registration + housing fees (self-funded)", deadline:"Typically spring", verified:"2026-07-16",
+  url:"https://cefrc.princeton.edu/combustion-summer-school",
+  desc:"An intensive week of graduate-level combustion and reacting-flow courses." },
+
+{ name:"Les Houches School of Physics", provider:"Université Grenoble Alpes", type:"summer-school",
+  dest:"France", levels:["phd","postdoc"], fields:["physics","fluids"], scope:"worldwide",
+  scopeNote:"Selective residential schools; some sessions cover local costs.",
+  funding:"varies", fundNote:"Many sessions subsidise room & board", deadline:"Per session", verified:"2026-07-16",
+  url:"https://www.houches-school-physics.com/",
+  desc:"Historic Alpine physics school running deep-dive sessions across many subfields." },
+
+{ name:"NASA Internships (OSTEM)", provider:"NASA", type:"internship",
+  dest:"United States", levels:["undergrad","masters","phd"], fields:["aerospace","engineering","mechanical","cs"], scope:"us-only",
+  scopeNote:"U.S. citizens only (export-control restricted).",
+  funding:"stipend", fundNote:"Paid stipend per session", deadline:"Rolling deadlines by session", verified:"2026-07-16",
+  url:"https://www.nasa.gov/learning-resources/internship-programs/",
+  desc:"Research internships across NASA centres — listed here mainly to flag the citizenship rule clearly." },
+
+{ name:"SGAC Scholarships & Awards", provider:"Space Generation Advisory Council", type:"travel-grant",
+  dest:"Multiple (events)", levels:["undergrad","masters","phd","recent-grad"], fields:["aerospace","engineering"], scope:"worldwide",
+  scopeNote:"For students and young professionals (typically 18–35) in the space sector.",
+  funding:"partial", fundNote:"Travel/registration to space conferences", deadline:"Per award", verified:"2026-07-16",
+  url:"https://spacegeneration.org/",
+  desc:"Sponsored places and travel to major space events for early-career people worldwide." },
+
+{ name:"IAF Emerging Space Leaders & IAC Grants", provider:"International Astronautical Federation", type:"travel-grant",
+  dest:"Multiple (IAC host city)", levels:["undergrad","masters","phd","recent-grad"], fields:["aerospace","engineering"], scope:"worldwide",
+  scopeNote:"Students and young professionals worldwide; supports IAC attendance.",
+  funding:"partial", fundNote:"Travel + registration support", deadline:"Typically spring", verified:"2026-07-16",
+  url:"https://www.iafastro.org/",
+  desc:"Grants that bring early-career people to the International Astronautical Congress." },
+
+{ name:"AIAA Scholarships & Awards", provider:"American Institute of Aeronautics and Astronautics", type:"scholarship",
+  dest:"Mostly United States", levels:["undergrad","masters","phd"], fields:["aerospace","engineering"], scope:"restricted",
+  scopeNote:"Many awards require AIAA membership and/or U.S. study; a few are open more broadly.",
+  funding:"partial", fundNote:"Award amounts vary", deadline:"Typically Jan–Feb", verified:"2026-07-16",
+  url:"https://www.aiaa.org/get-involved/students-educators/Scholarships-and-Awards",
+  desc:"The main aerospace professional society's student scholarships and design-competition awards." },
+
+{ name:"APS DFD Student Travel & Programs", provider:"American Physical Society — Div. of Fluid Dynamics", type:"travel-grant",
+  dest:"United States (annual meeting)", levels:["masters","phd"], fields:["fluids","physics","mechanical"], scope:"worldwide",
+  scopeNote:"International presenters can apply for travel support to the DFD meeting.",
+  funding:"partial", fundNote:"Partial travel awards", deadline:"Tied to abstract deadline (summer)", verified:"2026-07-16",
+  url:"https://www.aps.org/units/dfd/",
+  desc:"Travel awards and student programming around the largest annual fluid-dynamics meeting." },
+
+{ name:"International HPC Summer School (IHPCSS)", provider:"IHPCSS consortium (EuroHPC/PRACE, ACCESS, RIKEN, DRAC, Pawsey)", type:"summer-school",
+  dest:"Rotates (US · Europe · Japan · Canada · Australia)", levels:["phd","postdoc"], fields:["cs","engineering","fluids","physics"], scope:"restricted",
+  scopeNote:"Grad students & postdocs at institutions in the US, Canada, Europe, Japan, Australia and South Africa.",
+  funding:"full", fundNote:"Fees, meals, housing and reasonable flights covered", deadline:"Typically late Jan", verified:"2026-07-16",
+  url:"https://www.ihpcss.org/",
+  desc:"A week of intensive HPC and data-analytics training for computational-science researchers; the 2026 edition is in Perth, Australia." },
+
+{ name:"CTR Summer Program (turbulence)", provider:"Center for Turbulence Research, Stanford University", type:"summer-school",
+  dest:"United States", levels:["phd","postdoc"], fields:["fluids","mechanical","aerospace","physics"], scope:"worldwide",
+  scopeNote:"Open internationally by competitive research proposal; grad students attend with their advisor. Held biennially.",
+  funding:"partial", fundNote:"Partial travel support; Stanford provides HPC time — bring your own core funding", deadline:"Typically mid-Jan (biennial)", verified:"2026-07-16",
+  url:"https://ctr.stanford.edu/summer-research-opportunity",
+  desc:"The only summer program in the world dedicated to turbulence — a month of intensive collaborative research on multi-physics turbulent flows." },
+
+{ name:"International SuperComputing Camp (SC-Camp)", provider:"SCALAC / RedCLARA", type:"summer-school",
+  dest:"Rotates (Latin America — frequently Colombia)", levels:["undergrad","masters","phd"], fields:["cs","engineering","physics","fluids"], scope:"worldwide",
+  scopeNote:"Open to engineering and science students worldwide; taught in English (some sessions in Spanish).",
+  funding:"varies", fundNote:"Non-profit; kept low-cost, with attendance grants in some years", deadline:"Per edition", verified:"2026-07-16",
+  url:"https://sc-camp.org/",
+  desc:"A hands-on HPC and distributed-computing summer school held in a different (often Colombian) location each year." },
+
+{ name:"Geophysical Fluid Dynamics Summer Program", provider:"Woods Hole Oceanographic Institution", type:"summer-school",
+  dest:"United States", levels:["phd","postdoc"], fields:["fluids","physics"], scope:"worldwide",
+  scopeNote:"Competitive 10-week fellowship for graduate students; international applicants eligible.",
+  funding:"stipend", fundNote:"Fellowship stipend + travel", deadline:"Typically winter", verified:"2026-07-16",
+  url:"https://gfd.whoi.edu/",
+  desc:"A storied ten-week program pairing lectures with an original research project in rotating and stratified fluid dynamics." },
+
+/* ---- RESEARCH EXCHANGE & MOBILITY (transfer / visiting programs) ---- */
+{ name:"Mitacs Globalink Research Internship", provider:"Mitacs (Canada)", type:"internship",
+  dest:"Canada", levels:["undergrad"], fields:["engineering","cs","physics","any"], scope:"restricted",
+  scopeNote:"Senior undergraduates from Mitacs partner countries (incl. Colombia, Brazil, Mexico, India, France, Germany, UK, US…).",
+  funding:"full", fundNote:"Round-trip airfare, housing stipend, insurance and living stipend", deadline:"Typically autumn, for the following summer", verified:"2026-07-16",
+  url:"https://www.mitacs.ca/our-programs/globalink-research-internship-students/",
+  desc:"A funded 12-week summer research placement in a Canadian university lab for top international undergraduates." },
+
+{ name:"IAESTE Traineeships", provider:"Int'l Association for the Exchange of Students for Technical Experience", type:"exchange",
+  dest:"80+ member countries", levels:["undergrad","masters"], fields:["engineering","cs","physics","mechanical"], scope:"restricted",
+  scopeNote:"Apply through your country's IAESTE national committee; open to STEM students from member countries.",
+  funding:"stipend", fundNote:"Paid traineeship — stipend covers local living costs", deadline:"Varies by national committee", verified:"2026-07-16",
+  url:"https://iaeste.org/",
+  desc:"A long-running reciprocal exchange placing science and engineering students into paid technical internships abroad." },
+
+/* ---- META DATABASES (search engines to point people at) ---- */
+{ name:"EURAXESS", provider:"European Commission", type:"database",
+  dest:"Europe (and beyond)", levels:["masters","phd","postdoc"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Thousands of jobs, funding and hosting offers — filter carefully by eligibility.",
+  funding:"varies", fundNote:"Mixes funded posts and jobs", deadline:"Continuous", verified:"2026-07-16",
+  url:"https://euraxess.ec.europa.eu/",
+  desc:"The EU's portal for research jobs, fellowships and funding across Europe." },
+
+{ name:"DAAD Scholarship Database", provider:"DAAD (Germany)", type:"database",
+  dest:"Germany", levels:["undergrad","masters","phd","postdoc"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Covers DAAD's own programmes plus selected external funders.",
+  funding:"varies", fundNote:"—", deadline:"Continuous", verified:"2026-07-16",
+  url:"https://www2.daad.de/deutschland/stipendium/datenbank/en/",
+  desc:"Searchable database of funding for study and research in Germany." },
+
+{ name:"ScholarshipPortal (Studyportals)", provider:"Studyportals", type:"database",
+  dest:"Global", levels:["undergrad","masters","phd"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Filter by nationality, destination and level; verify each entry at source.",
+  funding:"varies", fundNote:"—", deadline:"Continuous", verified:"2026-07-16",
+  url:"https://www.scholarshipportal.com/",
+  desc:"Large aggregator of degree scholarships worldwide, searchable by profile." },
+
+{ name:"ProFellow", provider:"ProFellow", type:"database",
+  dest:"Global", levels:["masters","phd","postdoc"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Good for professional and academic fellowships; free account needed for full search.",
+  funding:"varies", fundNote:"—", deadline:"Continuous", verified:"2026-07-16",
+  url:"https://www.profellow.com/",
+  desc:"Curated database of fellowships and funded graduate opportunities." },
+
+{ name:"EducationUSA Financial Aid Search", provider:"U.S. Dept. of State", type:"database",
+  dest:"United States", levels:["undergrad","masters","phd"], fields:["any","engineering"], scope:"worldwide",
+  scopeNote:"Opportunities for international students seeking U.S. study; searchable by level.",
+  funding:"varies", fundNote:"—", deadline:"Continuous", verified:"2026-07-16",
+  url:"https://educationusa.state.gov/",
+  desc:"Official U.S. government resource for international applicants seeking funding to study stateside." },
+
+];
+/* ============================================================================
+   ⬆⬆⬆  END DATA — nothing below needs editing to add opportunities.  ⬆⬆⬆
+   ============================================================================ */
+
+
+/* ---- Filter vocabulary (label ↔ value) ---- */
+const GROUPS = [
+  { key:"type",  label:"Type", opts:[
+    ["Scholarship","scholarship"],["Fellowship","fellowship"],["Summer school","summer-school"],
+    ["Research internship","internship"],["Travel grant","travel-grant"],["Exchange / mobility","exchange"],["Postdoc","postdoc"],
+    ["PhD position","phd"],["Grant","grant"],["Database","database"]]},
+  { key:"levels",label:"Level", opts:[
+    ["Undergraduate","undergrad"],["Master's","masters"],["PhD","phd"],["Postdoc","postdoc"],["Recent grad","recent-grad"]]},
+  { key:"fields",label:"Field", opts:[
+    ["Any field","any"],["Engineering","engineering"],["Mechanical","mechanical"],["Aerospace","aerospace"],
+    ["Fluids / CFD","fluids"],["Physics","physics"],["Comp. sci.","cs"]]},
+  { key:"scope", label:"Eligibility", opts:[
+    ["Open worldwide","worldwide"],["Restricted countries","restricted"],["Region-locked","region"],
+    ["Enrol in host","host-enrolled"],["Citizenship-restricted","us-only"]]},
+  { key:"funding",label:"Funding", opts:[
+    ["Fully funded","full"],["Partial","partial"],["Stipend / paid","stipend"],["Varies","varies"]]},
+];
+
+/* signal presentation per scope */
+const SIG = {
+  worldwide:    {cls:"open",   dot:"open",   code:"Open worldwide"},
+  restricted:   {cls:"region", dot:"region", code:"Restricted countries"},
+  region:       {cls:"region", dot:"region", code:"Region-locked"},
+  "host-enrolled":{cls:"host", dot:"host",   code:"Must enrol in host"},
+  "us-only":    {cls:"closed", dot:"closed", code:"US citizens / PR only"},
+};
+const TYPE_LABEL = {scholarship:"Scholarship",fellowship:"Fellowship","summer-school":"Summer school",
+  internship:"Research internship","travel-grant":"Travel grant",exchange:"Exchange / mobility",postdoc:"Postdoc",phd:"PhD position",
+  grant:"Grant",database:"Database"};
+const FIELD_LABEL = {any:"Any field",engineering:"Engineering",mechanical:"Mechanical",aerospace:"Aerospace",
+  fluids:"Fluids/CFD",physics:"Physics",cs:"CS"};
+const LEVEL_LABEL = {undergrad:"Undergrad",masters:"Master's",phd:"PhD",postdoc:"Postdoc","recent-grad":"Recent grad"};
+
+/* ---- State ---- */
+const active = {type:new Set(),levels:new Set(),fields:new Set(),scope:new Set(),funding:new Set()};
+let query = "";
+
+/* ---- Wire config into the page ---- */
+document.getElementById("brandMark").textContent = SITE.name;
+document.getElementById("siteTitle").textContent = SITE.title;
+document.title = SITE.name + " — funded opportunities for international STEM students";
+document.getElementById("repoLink").href   = SITE.repoUrl;
+document.getElementById("submitLink").href = SITE.submitUrl;
+document.getElementById("updated").textContent = SITE.updated;
+document.getElementById("totalN").textContent  = DATA.length;
+
+/* Downloadable JSON built from the same array (no drift) */
+const blob = new Blob([JSON.stringify(DATA,null,2)],{type:"application/json"});
+document.getElementById("dataLink").href = URL.createObjectURL(blob);
+document.getElementById("dataLink").setAttribute("download","opportunities.json");
+
+/* ---- Build filter chips ---- */
+const filtersEl = document.getElementById("filters");
+GROUPS.forEach(g=>{
+  const row=document.createElement("div"); row.className="fgroup";
+  row.innerHTML=`<span class="glabel">${g.label}</span>`;
+  const chips=document.createElement("div"); chips.className="chips";
+  g.opts.forEach(([label,val])=>{
+    const b=document.createElement("button");
+    b.type="button"; b.className="chip"; b.textContent=label; b.setAttribute("aria-pressed","false");
+    b.addEventListener("click",()=>{
+      const set=active[g.key];
+      if(set.has(val)){set.delete(val);b.setAttribute("aria-pressed","false");}
+      else{set.add(val);b.setAttribute("aria-pressed","true");}
+      render();
+    });
+    chips.appendChild(b);
+  });
+  row.appendChild(chips); filtersEl.appendChild(row);
+});
+
+/* ---- Search + reset ---- */
+document.getElementById("q").addEventListener("input",e=>{query=e.target.value.toLowerCase().trim();render();});
+document.getElementById("resetBtn").addEventListener("click",resetAll);
+function resetAll(){
+  Object.values(active).forEach(s=>s.clear());
+  query=""; document.getElementById("q").value="";
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed","false"));
+  render();
+}
+
+/* ---- Matching ---- */
+function matches(o){
+  // groups: OR within, AND across; empty group = no constraint
+  for(const key of ["type","levels","fields","scope","funding"]){
+    const set=active[key]; if(set.size===0) continue;
+    if(key==="type"||key==="scope"||key==="funding"){
+      if(!set.has(o[key])) return false;
+    }else{ // array fields
+      if(![...set].some(v=>(o[key]||[]).includes(v))) return false;
+    }
+  }
+  if(query){
+    const hay=(o.name+" "+o.provider+" "+o.desc+" "+o.dest+" "+
+      (o.fields||[]).map(f=>FIELD_LABEL[f]).join(" ")+" "+
+      (o.levels||[]).join(" ")).toLowerCase();
+    if(!hay.includes(query)) return false;
+  }
+  return true;
+}
+
+/* ---- Render ---- */
+const grid=document.getElementById("grid");
+function render(){
+  const list=DATA.filter(matches);
+  document.getElementById("countN").textContent=list.length;
+  grid.innerHTML="";
+  if(list.length===0){
+    grid.innerHTML=`<div class="empty"><h3>No matches.</h3>
+      <p>Try widening a filter — eligibility and field are the usual culprits.</p>
+      <button type="button" onclick="(${resetAll.name})()">Clear all filters</button></div>`;
+    return;
+  }
+  list.forEach(o=>grid.appendChild(card(o)));
+}
+
+function card(o){
+  const sig=SIG[o.scope]||SIG.worldwide;
+  const rowClass = sig.cls==="open" ? "" : "r-"+sig.cls;
+  const el=document.createElement("article");
+  el.className="card "+rowClass;
+
+  const levels=(o.levels||[]).map(l=>`<span class="tag">${LEVEL_LABEL[l]||l}</span>`).join("");
+  const fields=(o.fields||[]).map(f=>`<span class="tag field">${FIELD_LABEL[f]||f}</span>`).join("");
+  const demo = o.demo ? `<span class="demoflag">${o.demo}</span>` : "";
+
+  el.innerHTML=`
+    <div class="eyebrow">${TYPE_LABEL[o.type]||o.type} · ${o.dest}</div>
+    <h3>${o.name}</h3>
+    <div class="provider">${o.provider}</div>
+    <p class="desc">${o.desc}</p>
+    <div class="tags">${levels}${fields}</div>
+    <div class="sig">
+      <span class="dot ${sig.dot}"></span>
+      <span class="stxt"><span class="scode ${sig.cls}">${sig.code}</span>${o.scopeNote||""}${demo}</span>
+    </div>
+    <div class="footer-row">
+      <span class="fund ${o.funding}">${({full:"Fully funded",partial:"Partial",stipend:"Stipend",varies:"Varies"})[o.funding]}</span>
+      <a class="golink" href="${o.url}" target="_blank" rel="noopener">View official page →</a>
+    </div>
+    <div class="deadline">Deadline: <b>${o.deadline}</b> · always confirm at source</div>
+  `;
+  return el;
+}
+
+render();
+</script>
+</body>
+</html>
