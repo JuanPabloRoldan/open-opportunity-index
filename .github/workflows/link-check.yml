@@ -1,0 +1,45 @@
+name: Link check
+
+# Verifies every official URL in the index still resolves.
+# Runs weekly, on demand, and on any change to the site/README.
+on:
+  schedule:
+    - cron: "0 6 * * 1"      # every Monday 06:00 UTC
+  workflow_dispatch:
+  push:
+    paths:
+      - "index.html"
+      - "README.md"
+
+permissions:
+  issues: write   # so the job can open/update an issue when links break
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check links
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # Scan the site and the README. 403/429 are usually bot-blocking,
+          # not truly dead, so we accept them to cut false positives.
+          args: >-
+            --no-progress
+            --accept 200,206,403,429
+            --max-retries 2
+            --timeout 20
+            --exclude-mail
+            "./index.html" "./README.md"
+          fail: false
+          output: ./lychee-report.md
+
+      - name: Open an issue if links are broken
+        if: steps.lychee.outputs.exit_code != 0
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "🔗 Broken links detected by the weekly check"
+          content-filepath: ./lychee-report.md
+          labels: broken-links, automated
