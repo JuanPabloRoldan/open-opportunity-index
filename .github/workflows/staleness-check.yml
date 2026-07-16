@@ -1,0 +1,41 @@
+name: Staleness check
+
+# Flags opportunities that haven't been re-verified against their official page
+# in a while. Link-check answers "does the URL resolve?"; this answers
+# "has a human confirmed this recently?" — the part automation can't judge alone.
+on:
+  schedule:
+    - cron: "0 7 1 * *"     # 07:00 UTC on the 1st of each month
+  workflow_dispatch:
+    inputs:
+      months:
+        description: "Flag entries not verified in this many months"
+        default: "6"
+
+permissions:
+  issues: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check verification dates
+        id: check
+        env:
+          STALE_MONTHS: ${{ github.event.inputs.months || '6' }}
+        run: node scripts/check-staleness.mjs
+        continue-on-error: true   # exit 1 (stale found) shouldn't fail the whole run
+
+      - name: Open an issue if entries are stale
+        if: steps.check.outcome == 'failure' && hashFiles('staleness-report.md') != ''
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "🕓 Entries need re-verification"
+          content-filepath: ./staleness-report.md
+          labels: staleness, automated
