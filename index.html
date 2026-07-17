@@ -116,7 +116,10 @@ h1{
   user-select:none
 }
 .chip:hover{border-color:var(--chart)}
-.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip[data-state="1"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip[data-state="2"]{background:#fdeceb;border-color:var(--sig-closed);color:var(--sig-closed)}
+.chip[data-state="2"]::before{content:"✕ "}
+.filterhint{font-family:var(--mono);font-size:11px;color:var(--slate);margin:2px 0 0}
 .chip:focus-visible{outline:2px solid var(--chart);outline-offset:2px}
 
 /* ---------- Results grid ---------- */
@@ -126,7 +129,7 @@ main .wrap{padding:26px 20px 10px}
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
   padding:18px 18px 16px;display:flex;flex-direction:column;gap:11px;
   box-shadow:var(--shadow);transition:transform .16s ease, box-shadow .16s ease;
-  border-top:3px solid var(--sig-open);overflow-wrap:break-word;overflow-wrap:break-word;overflow-wrap:break-word;overflow-wrap:break-word;overflow-wrap:break-word
+  border-top:3px solid var(--sig-open);overflow-wrap:break-word
 }
 .card.r-region{border-top-color:var(--sig-region)}
 .card.r-host{border-top-color:var(--sig-host)}
@@ -188,12 +191,12 @@ footer.site .meta{font-family:var(--mono);font-size:11.5px;color:#7f96ac;margin-
   footer.site .wrap{grid-template-columns:1fr}
   .fgroup .glabel{min-width:100%;padding-top:0}
 }
-
+/* ---------- Phones: tighten spacing, unstick the tall filter bar ---------- */
 @media(max-width:560px){
   .wrap{padding:0 16px}
   .masthead .wrap{padding:24px 16px 22px}
   .legend{gap:10px 16px;margin-top:18px;padding-top:14px}
-  .toolbar{position:static}
+  .toolbar{position:static}            /* let the filter bar scroll away rather than eat the screen */
   .toolbar .wrap{padding:14px 16px}
   .filters{margin-top:10px}
   .chip{font-size:11.5px;padding:6px 10px}
@@ -202,7 +205,6 @@ footer.site .meta{font-family:var(--mono);font-size:11.5px;color:#7f96ac;margin-
   .card{padding:16px 15px 15px}
   .card h3{font-size:18px}
 }
-   
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
 </style>
 </head>
@@ -707,6 +709,27 @@ const DATA = [
   url:"https://www.gov.br/capes/en/access-to-information/actions-and-programs/scholarships-and-students/international-cooperation-programs/multinational/post-graduate-student-covenant-program-pec-pg",
   desc:"Brazil's government scholarship bringing master's and doctoral students from partner developing countries into Brazilian universities." },
 
+{ name:"DOE Computational Science Graduate Fellowship (CSGF)", provider:"US Dept. of Energy (Krell Institute)", type:"fellowship",
+  dest:"United States", levels:["undergrad","phd"], fields:["cs","engineering","mechanical","fluids","physics"], scope:"us-only",
+  scopeNote:"US citizens or lawful permanent residents entering/early in a US PhD that uses high-performance computing.",
+  funding:"full", fundNote:"$45k stipend, full tuition & fees, $1k travel, 12-week DOE national-lab practicum; up to 4 yrs", deadline:"Typically mid-Jan", verified:"2026-07-16",
+  url:"https://www.krellinst.org/csgf/",
+  desc:"The premier US fellowship for PhD students applying HPC to science and engineering — a natural fit for CFD and computational work." },
+
+{ name:"NDSEG Fellowship", provider:"US Dept. of Defense (AFOSR · ARO · ONR)", type:"fellowship",
+  dest:"United States", levels:["undergrad","phd"], fields:["aerospace","mechanical","engineering","cs","physics"], scope:"us-only",
+  scopeNote:"US citizens, nationals or dual citizens only — permanent residents are NOT eligible. For early-stage PhD study in DoD-relevant STEM.",
+  funding:"full", fundNote:"3 yrs: full tuition & fees, ~$43k/yr stipend, health insurance, $5k travel", deadline:"Typically Aug–Nov", verified:"2026-07-16",
+  url:"https://ndseg.org/",
+  desc:"DoD doctoral fellowship in defense-relevant fields incl. aero/astro and mechanical engineering — funded by the same offices (AFOSR, ONR) behind much CFD research." },
+
+{ name:"SMART Scholarship-for-Service", provider:"US Dept. of Defense", type:"scholarship",
+  dest:"United States", levels:["undergrad","masters","phd"], fields:["engineering","mechanical","aerospace","cs","physics"], scope:"restricted",
+  scopeNote:"Citizens of the US, Australia, Canada, New Zealand or UK; requires DoD summer internships and post-degree DoD employment.",
+  funding:"full", fundNote:"Full tuition + annual stipend + guaranteed DoD job; service commitment applies", deadline:"Typically Dec 1", verified:"2026-07-16",
+  url:"https://www.smartscholarship.org/",
+  desc:"A full STEM scholarship in exchange for a service commitment working for the Department of Defense after graduation." },
+
 /* ---- META DATABASES (search engines to point people at) ---- */
 { name:"EURAXESS", provider:"European Commission", type:"database",
   dest:"Europe (and beyond)", levels:["masters","phd","postdoc"], fields:["any","engineering"], scope:"worldwide",
@@ -782,8 +805,10 @@ const FIELD_LABEL = {any:"Any field",engineering:"Engineering",mechanical:"Mecha
   fluids:"Fluids/CFD",physics:"Physics",cs:"CS"};
 const LEVEL_LABEL = {undergrad:"Undergrad",masters:"Master's",phd:"PhD",postdoc:"Postdoc","recent-grad":"Recent grad"};
 
-/* ---- State ---- */
-const active = {type:new Set(),levels:new Set(),fields:new Set(),scope:new Set(),funding:new Set()};
+/* ---- State ----
+   Each group is a Map: value -> 1 (include) or 2 (exclude). Absent = neutral.
+   A chip cycles neutral -> include -> exclude -> neutral on each click. */
+const active = {type:new Map(),levels:new Map(),fields:new Map(),scope:new Map(),funding:new Map()};
 let query = "";
 
 /* ---- Wire config into the page ---- */
@@ -800,7 +825,7 @@ const blob = new Blob([JSON.stringify(DATA,null,2)],{type:"application/json"});
 document.getElementById("dataLink").href = URL.createObjectURL(blob);
 document.getElementById("dataLink").setAttribute("download","opportunities.json");
 
-/* ---- Build filter chips ---- */
+/* ---- Build filter chips (tri-state) ---- */
 const filtersEl = document.getElementById("filters");
 GROUPS.forEach(g=>{
   const row=document.createElement("div"); row.className="fgroup";
@@ -808,38 +833,49 @@ GROUPS.forEach(g=>{
   const chips=document.createElement("div"); chips.className="chips";
   g.opts.forEach(([label,val])=>{
     const b=document.createElement("button");
-    b.type="button"; b.className="chip"; b.textContent=label; b.setAttribute("aria-pressed","false");
+    b.type="button"; b.className="chip"; b.textContent=label;
+    b.dataset.state="0"; b.setAttribute("aria-pressed","false");
     b.addEventListener("click",()=>{
-      const set=active[g.key];
-      if(set.has(val)){set.delete(val);b.setAttribute("aria-pressed","false");}
-      else{set.add(val);b.setAttribute("aria-pressed","true");}
+      const map=active[g.key];
+      const next=((map.get(val)||0)+1)%3;   // 0 -> 1 -> 2 -> 0
+      if(next===0) map.delete(val); else map.set(val,next);
+      b.dataset.state=String(next);
+      b.setAttribute("aria-pressed", next===1 ? "true":"false");
+      b.setAttribute("aria-label", next===2 ? label+" (excluded)" : label);
       render();
     });
     chips.appendChild(b);
   });
   row.appendChild(chips); filtersEl.appendChild(row);
 });
+const hint=document.createElement("p"); hint.className="filterhint";
+hint.textContent="Tap once to include · tap again to exclude (✕) · once more to clear.";
+filtersEl.appendChild(hint);
 
 /* ---- Search + reset ---- */
 document.getElementById("q").addEventListener("input",e=>{query=e.target.value.toLowerCase().trim();render();});
 document.getElementById("resetBtn").addEventListener("click",resetAll);
 function resetAll(){
-  Object.values(active).forEach(s=>s.clear());
+  Object.values(active).forEach(m=>m.clear());
   query=""; document.getElementById("q").value="";
-  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed","false"));
+  document.querySelectorAll(".chip").forEach(c=>{
+    c.dataset.state="0"; c.setAttribute("aria-pressed","false");
+    c.setAttribute("aria-label", c.textContent);
+  });
   render();
 }
 
-/* ---- Matching ---- */
+/* ---- Matching ----
+   Per group: include set = state 1, exclude set = state 2.
+   Item must match at least one included value (if any) AND none of the excluded. */
 function matches(o){
-  // groups: OR within, AND across; empty group = no constraint
   for(const key of ["type","levels","fields","scope","funding"]){
-    const set=active[key]; if(set.size===0) continue;
-    if(key==="type"||key==="scope"||key==="funding"){
-      if(!set.has(o[key])) return false;
-    }else{ // array fields
-      if(![...set].some(v=>(o[key]||[]).includes(v))) return false;
-    }
+    const map=active[key]; if(map.size===0) continue;
+    const itemVals = (key==="levels"||key==="fields") ? (o[key]||[]) : [o[key]];
+    const inc=[], exc=[];
+    map.forEach((st,v)=>{ (st===2?exc:inc).push(v); });
+    if(inc.length && !inc.some(v=>itemVals.includes(v))) return false;
+    if(exc.length &&  exc.some(v=>itemVals.includes(v))) return false;
   }
   if(query){
     const hay=(o.name+" "+o.provider+" "+o.desc+" "+o.dest+" "+
