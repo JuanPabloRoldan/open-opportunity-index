@@ -2,6 +2,8 @@ name: Link check
 
 # Verifies every official URL in the index still resolves.
 # Runs weekly, on demand, and on any change to the site/README.
+# Keeps ONE open "broken-links" issue: updates it while links are broken,
+# closes it automatically once everything passes again.
 on:
   schedule:
     - cron: "0 6 * * 1"      # every Monday 06:00 UTC
@@ -12,20 +14,19 @@ on:
       - "README.md"
 
 permissions:
-  issues: write   # so the job can open/update an issue when links break
+  issues: write   # open / update / close the tracking issue
 
 jobs:
   links:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned so the ubuntu-latest -> 26 migration can't change behavior silently
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check links
         id: lychee
         uses: lycheeverse/lychee-action@v2
         with:
-          # Scan the site and the README. 403/429 are usually bot-blocking,
-          # not truly dead, so we accept them to cut false positives.
+          # 403/429 are usually bot-blocking, not truly dead, so accept them.
           args: >-
             --no-progress
             --accept 200,206,403,429
@@ -33,13 +34,35 @@ jobs:
             --timeout 20
             --exclude-mail
             "./index.html" "./README.md"
-          fail: false
+          format: markdown
           output: ./lychee-report.md
+          fail: false
 
-      - name: Open an issue if links are broken
-        if: steps.lychee.outputs.exit_code != 0
-        uses: peter-evans/create-issue-from-file@v5
-        with:
-          title: "🔗 Broken links detected by the weekly check"
-          content-filepath: ./lychee-report.md
-          labels: broken-links, automated
+      - name: Sync tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXIT_CODE: ${{ steps.lychee.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          title="🔗 Broken links detected by the link check"
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --label broken-links \
+                       --state open --json number --jq '.[0].number // empty')
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            {
+              echo "_Last checked: $(date -u '+%Y-%m-%d %H:%M UTC') — [run log]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)_"
+              echo
+              cat ./lychee-report.md
+            } > body.md
+            if [ -n "$existing" ]; then
+              gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --body-file body.md
+              gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" \
+                --body "Still failing as of $(date -u '+%Y-%m-%d'). Report above updated."
+            else
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" \
+                --label broken-links --label automated --body-file body.md
+            fi
+          elif [ -n "$existing" ]; then
+            gh issue close "$existing" --repo "$GITHUB_REPOSITORY" \
+              --comment "All links pass as of $(date -u '+%Y-%m-%d'). Closing automatically."
+          fi
